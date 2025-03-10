@@ -1,4 +1,0 @@
-streamlit
-io 
-pandas 
-openpyxl 
