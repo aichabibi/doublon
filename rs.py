@@ -36,8 +36,8 @@ def detect_duplicates(df):
     # Convertir la colonne des dates en format datetime
     df[col_date] = pd.to_datetime(df[col_date], errors='coerce')  # Convertir en format date
     
-    # Formater la colonne des dates pour afficher uniquement la date sans l'heure
-    df[col_date] = df[col_date].dt.strftime('%Y-%m-%d')  # Format : 'YYYY-MM-DD'
+    # Formater la colonne des dates pour afficher au format français (jj/mm/aaaa)
+    df[col_date] = df[col_date].dt.strftime('%d/%m/%Y')  # Format : 'DD/MM/YYYY'
     
     # Détecter les doublons en fonction du matricule et de la date
     duplicate_df = df[df.duplicated(subset=[col_matricule, col_date], keep=False)]
