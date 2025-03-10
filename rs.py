@@ -42,7 +42,7 @@ Sub Verifier_Doublons()
             Case "NOM": colNom = i
             Case "PRENOM": colPrenom = i
             Case "ACTIVITE": colActivite = i ' Trouver la colonne ACTIVITE '
-            Case "CUMUL": colCumul = i ' Trouver la colonne CUMUL
+            Case "CUMUL": colCumul = i ' Trouver la colonne CUMUL '
         End Select
     Next i
 
@@ -79,7 +79,7 @@ Sub Verifier_Doublons()
     
     ' Vérifier les doublons et stocker les résultats '
     For Each key In dict.keys
-        If dict(key) > 1 Then ' Filtrer les doublons (plus de 1 occurrence)
+        If dict(key) > 1 Then ' Filtrer les doublons (plus de 1 occurrence) '
             matricule = Split(key, "_")(1)
             dateDebut = Split(key, "_")(0)
             activite = Split(key, "_")(2)
@@ -99,7 +99,7 @@ Sub Verifier_Doublons()
     
     ' Vérifier si des doublons existent '
     If results.Count > 0 Then
-        results.Sort ' Trier les résultats pour plus de clarté
+        results.Sort ' Trier les résultats pour plus de clarté '
         
         ' Exporter les résultats dans une feuille si trop long '
         If results.Count > 20 Then
@@ -135,7 +135,7 @@ Sub Verifier_Doublons()
         MsgBox "Aucun doublon détecté.", vbInformation, "Vérification Terminée"
     End If
     
-    ' Nettoyage
+    ' Nettoyage '
     Set dict = Nothing
     Set results = Nothing
     Set ws = Nothing
