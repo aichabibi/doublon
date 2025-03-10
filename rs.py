@@ -23,24 +23,25 @@ def filter_data(df):
     colonne_reference = st.selectbox("Sélectionnez la colonne de filtrage", df.columns)
     df_filtered = df[df[colonne_reference].isin(valeurs_cibles)]
     
-    # Filtre de dates
-    if 'DATE' in df.columns:  # Vérifiez si la colonne DATE existe dans votre fichier
-        min_date = df['DATE'].min()
-        max_date = df['DATE'].max()
+    # Filtre de dates : Ajout du filtre basé sur la colonne 'DATE DEBUT'
+    if 'DATE DEBUT' in df.columns:  # Vérifiez si la colonne DATE DEBUT existe dans votre fichier
+        # Convertir la colonne 'DATE DEBUT' en format datetime si ce n'est pas déjà fait
+        df['DATE DEBUT'] = pd.to_datetime(df['DATE DEBUT'], errors='coerce')
         
-        # Ajout du filtre de plage de dates
+        # Trouver la date minimale et maximale pour la plage de dates
+        min_date = df['DATE DEBUT'].min()
+        max_date = df['DATE DEBUT'].max()
+
+        # Ajout du filtre de plage de dates avec un calendrier interactif
         start_date, end_date = st.date_input(
             "Sélectionnez une période", 
             value=(min_date, max_date), 
             min_value=min_date, 
             max_value=max_date
         )
-        
-        # Convertir la colonne DATE en format datetime si nécessaire
-        df['DATE'] = pd.to_datetime(df['DATE'], errors='coerce')
-        
+
         # Filtrer le DataFrame en fonction de la période sélectionnée
-        df_filtered = df_filtered[(df['DATE'] >= pd.to_datetime(start_date)) & (df['DATE'] <= pd.to_datetime(end_date))]
+        df_filtered = df_filtered[(df['DATE DEBUT'] >= pd.to_datetime(start_date)) & (df['DATE DEBUT'] <= pd.to_datetime(end_date))]
 
     # Retourner les données filtrées sans modifier la structure initiale
     return df_filtered
@@ -80,7 +81,6 @@ def detect_duplicates(df):
         )
     else:
         st.success("Aucun doublon trouvé.")
-
 
 # Interface principale de l'application
 def main():
