@@ -23,6 +23,25 @@ def filter_data(df):
     colonne_reference = st.selectbox("Sélectionnez la colonne de filtrage", df.columns)
     df_filtered = df[df[colonne_reference].isin(valeurs_cibles)]
     
+    # Filtre de dates
+    if 'DATE' in df.columns:  # Vérifiez si la colonne DATE existe dans votre fichier
+        min_date = df['DATE'].min()
+        max_date = df['DATE'].max()
+        
+        # Ajout du filtre de plage de dates
+        start_date, end_date = st.date_input(
+            "Sélectionnez une période", 
+            value=(min_date, max_date), 
+            min_value=min_date, 
+            max_value=max_date
+        )
+        
+        # Convertir la colonne DATE en format datetime si nécessaire
+        df['DATE'] = pd.to_datetime(df['DATE'], errors='coerce')
+        
+        # Filtrer le DataFrame en fonction de la période sélectionnée
+        df_filtered = df_filtered[(df['DATE'] >= pd.to_datetime(start_date)) & (df['DATE'] <= pd.to_datetime(end_date))]
+
     # Retourner les données filtrées sans modifier la structure initiale
     return df_filtered
 
