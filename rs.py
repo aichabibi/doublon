@@ -41,7 +41,7 @@ Sub Verifier_Doublons()
             Case "DATE DEBUT": colDateDebut = i: found = True
             Case "NOM": colNom = i
             Case "PRENOM": colPrenom = i
-            Case "ACTIVITE": colActivite = i ' Trouver la colonne ACTIVITE
+            Case "ACTIVITE": colActivite = i ' Trouver la colonne ACTIVITE '
             Case "CUMUL": colCumul = i ' Trouver la colonne CUMUL
         End Select
     Next i
