@@ -19,21 +19,21 @@ Sub Verifier_Doublons()
                             "IGD IDF LOG. + 1 REP.", "IGD IDF LOG. + 2 REP.", "IPD Repas hors locaux (TX)", _
                             "Repas pris restaurant", "IPD Ticket restaurant", "Panier Sedentaire (TX)")
 
-    ' Sélectionner la feuille
+    ' Sélectionner la feuille '
     On Error Resume Next
     Set ws = ThisWorkbook.Sheets("Synthese CRA 32D1")
     On Error GoTo 0
     
-    ' Vérifier si la feuille existe
+    ' Vérifier si la feuille existe '
     If ws Is Nothing Then
         MsgBox "La feuille 'Synthese CRA 32D1' n'existe pas !", vbCritical, "Erreur"
         Exit Sub
     End If
     
-    ' Trouver la dernière ligne de données
+    ' Trouver la dernière ligne de données '
     lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row ' Colonne A pour s'assurer que toutes les lignes sont prises
 
-    ' Trouver les colonnes dynamiquement
+    ' Trouver les colonnes dynamiquement '
     found = False
     For i = 1 To ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
         Select Case Trim(ws.Cells(1, i).Value)
@@ -46,24 +46,24 @@ Sub Verifier_Doublons()
         End Select
     Next i
 
-    ' Vérifier si les colonnes essentielles sont trouvées
+    ' Vérifier si les colonnes essentielles sont trouvées '
     If colMatricule = 0 Or colDateDebut = 0 Or colActivite = 0 Or colCumul = 0 Then
         MsgBox "Impossible de trouver les colonnes 'MATRICULE', 'DATE DEBUT', 'ACTIVITE' ou 'CUMUL'. Vérifiez les noms des colonnes.", vbCritical, "Erreur"
         Exit Sub
     End If
     
-    ' Initialiser le dictionnaire et la liste des résultats
+    ' Initialiser le dictionnaire et la liste des résultats '
     Set dict = CreateObject("Scripting.Dictionary")
     Set results = CreateObject("System.Collections.ArrayList")
     
-    ' Parcourir les lignes pour stocker les occurrences
+    ' Parcourir les lignes pour stocker les occurrences '
     For i = 2 To lastRow
         matricule = ws.Cells(i, colMatricule).Value
         dateDebut = ws.Cells(i, colDateDebut).Value
         activite = ws.Cells(i, colActivite).Value
         cumul = ws.Cells(i, colCumul).Value
         
-        ' Vérifier si l'activité est valide (si elle est dans la liste des activités valides) et si CUMUL n'est pas égal à 0
+        ' Vérifier si l'activité est valide (si elle est dans la liste des activités valides) et si CUMUL n'est pas égal à 0 '
         If IsInArray(activite, activiteValides) And cumul <> 0 Then
             ' Clé unique = combinaison de DATE DEBUT + MATRICULE + ACTIVITE
             key = dateDebut & "_" & matricule & "_" & activite
@@ -77,14 +77,14 @@ Sub Verifier_Doublons()
         End If
     Next i
     
-    ' Vérifier les doublons et stocker les résultats
+    ' Vérifier les doublons et stocker les résultats '
     For Each key In dict.keys
         If dict(key) > 1 Then ' Filtrer les doublons (plus de 1 occurrence)
             matricule = Split(key, "_")(1)
             dateDebut = Split(key, "_")(0)
             activite = Split(key, "_")(2)
             
-            ' Trouver le NOM et PRÉNOM associés
+            ' Trouver le NOM et PRÉNOM associés '
             For i = 2 To lastRow
                 If ws.Cells(i, colMatricule).Value = matricule And ws.Cells(i, colDateDebut).Value = dateDebut And ws.Cells(i, colActivite).Value = activite Then
                     nom = ws.Cells(i, colNom).Value
@@ -97,11 +97,11 @@ Sub Verifier_Doublons()
         End If
     Next key
     
-    ' Vérifier si des doublons existent
+    ' Vérifier si des doublons existent '
     If results.Count > 0 Then
         results.Sort ' Trier les résultats pour plus de clarté
         
-        ' Exporter les résultats dans une feuille si trop long
+        ' Exporter les résultats dans une feuille si trop long '
         If results.Count > 20 Then
             Dim wsNew As Worksheet
             Set wsNew = ThisWorkbook.Sheets.Add
@@ -121,7 +121,7 @@ Sub Verifier_Doublons()
             
             MsgBox "La liste des doublons a été exportée dans la feuille 'Doublons Détectés'.", vbInformation, "Export Terminé"
         Else
-            ' Affichage direct dans une boîte de dialogue
+            ' Affichage direct dans une boîte de dialogue '
             Dim output As String
             output = "Liste des doublons détectés :" & vbNewLine & String(50, "-") & vbNewLine
             
@@ -141,7 +141,7 @@ Sub Verifier_Doublons()
     Set ws = Nothing
 End Sub
 
-' Fonction pour vérifier si un élément est dans un tableau
+' Fonction pour vérifier si un élément est dans un tableau '
 Function IsInArray(val As String, arr As Variant) As Boolean
     Dim element As Variant
     For Each element In arr
