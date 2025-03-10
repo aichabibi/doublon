@@ -1,105 +1,154 @@
-import streamlit as st
-import pandas as pd
-import io
+Sub Verifier_Doublons()
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim i As Long
+    Dim matricule As String, dateDebut As String, activite As String
+    Dim dict As Object
+    Dim msg As String
+    Dim nom As String, prenom As String
+    Dim results As Object
+    Dim key As Variant
+    Dim colMatricule As Integer, colDateDebut As Integer
+    Dim colNom As Integer, colPrenom As Integer, colActivite As Integer, colCumul As Integer
+    Dim found As Boolean
+    Dim activiteValides As Variant
 
-# Étape 1 : Télécharger le fichier et choisir la feuille
-def load_excel():
-    uploaded_file = st.file_uploader("Téléchargez votre fichier Excel", type=["xlsx", "xls"])
-    if uploaded_file:
-        xls = pd.ExcelFile(uploaded_file)
-        sheet_name = st.selectbox("Sélectionnez une feuille", xls.sheet_names)
-        df = pd.read_excel(xls, sheet_name=sheet_name)
-        return df
-    return None
+    ' Liste des valeurs valides pour la colonne ACTIVITE
+    activiteValides = Array("IGD HORS IDF 1 REP.", "IGD HORS IDF 2 REP.", "IGD HORS IDF LOG. + 1 REP.", _
+                            "IGD HORS IDF LOG. + 2 REP.", "IGD IDF 1 REP.", "IGD IDF 2 REP.", _
+                            "IGD IDF LOG. + 1 REP.", "IGD IDF LOG. + 2 REP.", "IPD Repas hors locaux (TX)", _
+                            "Repas pris restaurant", "IPD Ticket restaurant", "Panier Sedentaire (TX)")
 
-# Étape 2 : Filtrer les données sur les valeurs spécifiques
-def filter_data(df):
-    valeurs_cibles = [
-        'IGD HORS IDF 1 REP.', 'IGD HORS IDF 2 REP.', 'IGD HORS IDF LOG. + 1 REP.',
-        'IGD HORS IDF LOG. + 2 REP.', 'IGD IDF 1 REP.', 'IGD IDF 2 REP.',
-        'IGD IDF LOG. + 1 REP.', 'IGD IDF LOG. + 2 REP.', 'IPD Repas hors locaux (TX)',
-        'Repas pris restaurant', 'IPD Ticket restaurant', 'Panier Sedentaire (TX)'
-    ]
-    colonne_reference = st.selectbox("Sélectionnez la colonne de filtrage", df.columns)
-    df_filtered = df[df[colonne_reference].isin(valeurs_cibles)]
+    ' Sélectionner la feuille
+    On Error Resume Next
+    Set ws = ThisWorkbook.Sheets("Synthese CRA 32D1")
+    On Error GoTo 0
     
-    # Filtre de dates : Ajout du filtre basé sur la colonne 'DATE DEBUT'
-    if 'DATE DEBUT' in df.columns:  # Vérifiez si la colonne DATE DEBUT existe dans votre fichier
-        # Convertir la colonne 'DATE DEBUT' en format datetime si ce n'est pas déjà fait
-        df['DATE DEBUT'] = pd.to_datetime(df['DATE DEBUT'], errors='coerce')
-        
-        # Trouver la date minimale et maximale pour la plage de dates
-        min_date = df['DATE DEBUT'].min()
-        max_date = df['DATE DEBUT'].max()
-
-        # Ajout du filtre de plage de dates avec un calendrier interactif
-        start_date, end_date = st.date_input(
-            "Sélectionnez une période", 
-            value=(min_date, max_date), 
-            min_value=min_date, 
-            max_value=max_date
-        )
-
-        # Filtrer le DataFrame en fonction de la période sélectionnée
-        df_filtered = df_filtered[(df['DATE DEBUT'] >= pd.to_datetime(start_date)) & (df['DATE DEBUT'] <= pd.to_datetime(end_date))]
-
-    # Retourner les données filtrées sans modifier la structure initiale
-    return df_filtered
-
-# Étape 3 : Détection des doublons de matricules pour une même date
-def detect_duplicates(df):
-    col_matricule = st.selectbox("Sélectionnez la colonne des matricules", df.columns)
-    col_date = st.selectbox("Sélectionnez la colonne des dates", df.columns)
-    col_nom = st.selectbox("Sélectionnez la colonne du nom", df.columns)
-    col_prenom = st.selectbox("Sélectionnez la colonne du prénom", df.columns)
+    ' Vérifier si la feuille existe
+    If ws Is Nothing Then
+        MsgBox "La feuille 'Synthese CRA 32D1' n'existe pas !", vbCritical, "Erreur"
+        Exit Sub
+    End If
     
-    # Convertir la colonne des dates en format datetime
-    df[col_date] = pd.to_datetime(df[col_date], errors='coerce')  # Convertir en format date
-    
-    # Formater la colonne des dates pour afficher au format français (jj/mm/aaaa)
-    df[col_date] = df[col_date].dt.strftime('%d/%m/%Y')  # Format : 'DD/MM/YYYY'
-    
-    # Détecter les doublons en fonction du matricule et de la date
-    duplicate_df = df[df.duplicated(subset=[col_matricule, col_date], keep=False)]
-    
-    if not duplicate_df.empty:
-        # Afficher le tableau des doublons avec les colonnes souhaitées, y compris 'ACTIVITE'
-        st.write("### Matricules en double pour la même date")
-        st.dataframe(duplicate_df[[col_date, col_matricule, col_nom, col_prenom, 'ACTIVITE']])
-        
-        # Créer un fichier Excel à partir du DataFrame des doublons
-        output = io.BytesIO()
-        duplicate_df.to_excel(output, index=False, engine='openpyxl')
-        output.seek(0)
+    ' Trouver la dernière ligne de données
+    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row ' Colonne A pour s'assurer que toutes les lignes sont prises
 
-        # Bouton de téléchargement pour le fichier Excel
-        st.download_button(
-            label="Exporter les doublons en Excel",
-            data=output,
-            file_name="doublons_detectes.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-    else:
-        st.success("Aucun doublon trouvé.")
+    ' Trouver les colonnes dynamiquement
+    found = False
+    For i = 1 To ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
+        Select Case Trim(ws.Cells(1, i).Value)
+            Case "MATRICULE": colMatricule = i: found = True
+            Case "DATE DEBUT": colDateDebut = i: found = True
+            Case "NOM": colNom = i
+            Case "PRENOM": colPrenom = i
+            Case "ACTIVITE": colActivite = i ' Trouver la colonne ACTIVITE
+            Case "CUMUL": colCumul = i ' Trouver la colonne CUMUL
+        End Select
+    Next i
 
-# Interface principale de l'application
-def main():
-    st.title("Détection des doublons de matricules")
-    df = load_excel()
-    if df is not None:
-        # Filtrer les données selon les critères donnés
-        df_filtered = filter_data(df)
+    ' Vérifier si les colonnes essentielles sont trouvées
+    If colMatricule = 0 Or colDateDebut = 0 Or colActivite = 0 Or colCumul = 0 Then
+        MsgBox "Impossible de trouver les colonnes 'MATRICULE', 'DATE DEBUT', 'ACTIVITE' ou 'CUMUL'. Vérifiez les noms des colonnes.", vbCritical, "Erreur"
+        Exit Sub
+    End If
+    
+    ' Initialiser le dictionnaire et la liste des résultats
+    Set dict = CreateObject("Scripting.Dictionary")
+    Set results = CreateObject("System.Collections.ArrayList")
+    
+    ' Parcourir les lignes pour stocker les occurrences
+    For i = 2 To lastRow
+        matricule = ws.Cells(i, colMatricule).Value
+        dateDebut = ws.Cells(i, colDateDebut).Value
+        activite = ws.Cells(i, colActivite).Value
+        cumul = ws.Cells(i, colCumul).Value
         
-        # Vérifier si la colonne 'ACTIVITE' existe, et l'ajouter à l'affichage sans duplication
-        if 'ACTIVITE' in df.columns:
-            # Ajouter 'ACTIVITE' à l'affichage des données filtrées
-            df_filtered['ACTIVITE'] = df['ACTIVITE']
+        ' Vérifier si l'activité est valide (si elle est dans la liste des activités valides) et si CUMUL n'est pas égal à 0
+        If IsInArray(activite, activiteValides) And cumul <> 0 Then
+            ' Clé unique = combinaison de DATE DEBUT + MATRICULE + ACTIVITE
+            key = dateDebut & "_" & matricule & "_" & activite
+            
+            ' Ajouter dans le dictionnaire
+            If dict.exists(key) Then
+                dict(key) = dict(key) + 1
+            Else
+                dict.Add key, 1
+            End If
+        End If
+    Next i
+    
+    ' Vérifier les doublons et stocker les résultats
+    For Each key In dict.keys
+        If dict(key) > 1 Then ' Filtrer les doublons (plus de 1 occurrence)
+            matricule = Split(key, "_")(1)
+            dateDebut = Split(key, "_")(0)
+            activite = Split(key, "_")(2)
+            
+            ' Trouver le NOM et PRÉNOM associés
+            For i = 2 To lastRow
+                If ws.Cells(i, colMatricule).Value = matricule And ws.Cells(i, colDateDebut).Value = dateDebut And ws.Cells(i, colActivite).Value = activite Then
+                    nom = ws.Cells(i, colNom).Value
+                    prenom = ws.Cells(i, colPrenom).Value
+                    Exit For
+                End If
+            Next i
+            
+            results.Add dateDebut & " | " & matricule & " | " & nom & " " & prenom & " | " & activite
+        End If
+    Next key
+    
+    ' Vérifier si des doublons existent
+    If results.Count > 0 Then
+        results.Sort ' Trier les résultats pour plus de clarté
         
-        # Affichage du DataFrame filtré avec la colonne 'ACTIVITE'
-        st.dataframe(df_filtered)
-        
-        # Détecter les doublons dans le DataFrame filtré, avec 'ACTIVITE' incluse
-        detect_duplicates(df_filtered)
+        ' Exporter les résultats dans une feuille si trop long
+        If results.Count > 20 Then
+            Dim wsNew As Worksheet
+            Set wsNew = ThisWorkbook.Sheets.Add
+            wsNew.Name = "Doublons Détectés"
+            
+            wsNew.Cells(1, 1).Value = "DATE DEBUT"
+            wsNew.Cells(1, 2).Value = "MATRICULE"
+            wsNew.Cells(1, 3).Value = "NOM PRÉNOM"
+            wsNew.Cells(1, 4).Value = "ACTIVITE"
+            
+            For i = 0 To results.Count - 1
+                wsNew.Cells(i + 2, 1).Value = Split(results(i), " | ")(0)
+                wsNew.Cells(i + 2, 2).Value = Split(results(i), " | ")(1)
+                wsNew.Cells(i + 2, 3).Value = Split(results(i), " | ")(2)
+                wsNew.Cells(i + 2, 4).Value = Split(results(i), " | ")(3)
+            Next i
+            
+            MsgBox "La liste des doublons a été exportée dans la feuille 'Doublons Détectés'.", vbInformation, "Export Terminé"
+        Else
+            ' Affichage direct dans une boîte de dialogue
+            Dim output As String
+            output = "Liste des doublons détectés :" & vbNewLine & String(50, "-") & vbNewLine
+            
+            For Each Item In results
+                output = output & Item & vbNewLine
+            Next Item
+            
+            MsgBox output, vbExclamation, "Alerte : Matricules en double"
+        End If
+    Else
+        MsgBox "Aucun doublon détecté.", vbInformation, "Vérification Terminée"
+    End If
+    
+    ' Nettoyage
+    Set dict = Nothing
+    Set results = Nothing
+    Set ws = Nothing
+End Sub
 
-if __name__ == "__main__":
-    main()
+' Fonction pour vérifier si un élément est dans un tableau
+Function IsInArray(val As String, arr As Variant) As Boolean
+    Dim element As Variant
+    For Each element In arr
+        If element = val Then
+            IsInArray = True
+            Exit Function
+        End If
+    Next element
+    IsInArray = False
+End Function
