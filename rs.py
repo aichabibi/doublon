@@ -20,8 +20,15 @@ def filter_data(df):
         'IGD IDF LOG. + 1 REP.', 'IGD IDF LOG. + 2 REP.', 'IPD Repas hors locaux (TX)',
         'Repas pris restaurant', 'IPD Ticket restaurant', 'Panier Sedentaire (TX)'
     ]
+    
     colonne_reference = st.selectbox("Sélectionnez la colonne de filtrage", df.columns)
     df_filtered = df[df[colonne_reference].isin(valeurs_cibles)]
+    
+    # Filtrer la colonne 'CUMUL' pour ne pas prendre les lignes où CUMUL == '0'
+    if 'CUMUL' in df.columns:
+        # Vérifiez si la colonne 'CUMUL' est sous forme de chaîne ou de nombre
+        # On supprime les lignes où la valeur de CUMUL est égale à '0' ou 0
+        df_filtered = df_filtered[~df_filtered['CUMUL'].isin([0, '0'])]
     
     # Filtre de dates : Ajout du filtre basé sur la colonne 'DATE DEBUT'
     if 'DATE DEBUT' in df.columns:  # Vérifiez si la colonne DATE DEBUT existe dans votre fichier
