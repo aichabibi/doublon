@@ -65,10 +65,10 @@ Sub Verifier_Doublons()
         
         ' Vérifier si l'activité est valide (si elle est dans la liste des activités valides) et si CUMUL n'est pas égal à 0 '
         If IsInArray(activite, activiteValides) And cumul <> 0 Then
-            ' Clé unique = combinaison de DATE DEBUT + MATRICULE + ACTIVITE
+            ' Clé unique = combinaison de DATE DEBUT + MATRICULE + ACTIVITE '
             key = dateDebut & "_" & matricule & "_" & activite
             
-            ' Ajouter dans le dictionnaire
+            ' Ajouter dans le dictionnaire '
             If dict.exists(key) Then
                 dict(key) = dict(key) + 1
             Else
