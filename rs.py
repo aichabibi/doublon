@@ -13,7 +13,7 @@ Sub Verifier_Doublons()
     Dim found As Boolean
     Dim activiteValides As Variant
 
-    ' Liste des valeurs valides pour la colonne ACTIVITE
+    ' Liste des valeurs valides pour la colonne ACTIVITE '
     activiteValides = Array("IGD HORS IDF 1 REP.", "IGD HORS IDF 2 REP.", "IGD HORS IDF LOG. + 1 REP.", _
                             "IGD HORS IDF LOG. + 2 REP.", "IGD IDF 1 REP.", "IGD IDF 2 REP.", _
                             "IGD IDF LOG. + 1 REP.", "IGD IDF LOG. + 2 REP.", "IPD Repas hors locaux (TX)", _
