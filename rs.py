@@ -21,14 +21,26 @@ def filter_data(df):
         'IGD IDF LOG. + 1 REP.', 'IGD IDF LOG. + 2 REP.', 'IPD Repas hors locaux (TX)',
         'Repas pris restaurant', 'IPD Ticket restaurant', 'Panier Sedentaire (TX)'
     ]
-    
+
+    # Liste des valeurs interdites dans la colonne 'CODE CRA'
+    valeurs_interdites_code_cra = [
+        'j_B0534_Paie', 'j_B0670_Paie', 'j_BDI09_Paie', 'j_BDI13_Pai3',
+        'j_BDI19_Paie', 'j_BNU24_Paie', 'j_BNU28_Paie', 'j_BNU37_Paie',
+        'j_BNU38_Paie', 'j_BNU40_Paie', 'j_BSA21_Paie', 'j_BTICK_paie',
+        'j_WIRRE_paie'
+    ]
+
     colonne_reference = st.selectbox("Sélectionnez la colonne de filtrage", df.columns)
     df_filtered = df[df[colonne_reference].isin(valeurs_cibles)]
     
     # Filtrer la colonne 'CUMUL' pour ne pas prendre les lignes où CUMUL == '0'
     if 'CUMUL' in df.columns:
         df_filtered = df_filtered[~df_filtered['CUMUL'].isin([0, '0'])]
-    
+
+    # Supprimer les lignes où 'CODE CRA' contient une valeur interdite
+    if 'CODE CRA' in df.columns:
+        df_filtered = df_filtered[~df_filtered['CODE CRA'].isin(valeurs_interdites_code_cra)]
+
     # Filtre de dates : Ajout du filtre basé sur la colonne 'DATE DEBUT'
     if 'DATE DEBUT' in df.columns:
         df['DATE DEBUT'] = pd.to_datetime(df['DATE DEBUT'], errors='coerce')
