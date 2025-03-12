@@ -30,9 +30,13 @@ def filter_data(df):
         'j_WIRRE_paie'
     ]
 
-    colonne_reference = st.selectbox("Sélectionnez la colonne de filtrage", df.columns)
-    df_filtered = df[df[colonne_reference].isin(valeurs_cibles)]
-    
+    # Vérifier si la colonne ACTIVITE existe
+    if 'ACTIVITE' in df.columns:
+        df_filtered = df[df['ACTIVITE'].isin(valeurs_cibles)]
+    else:
+        st.error("⚠️ La colonne 'ACTIVITE' est introuvable dans le fichier.")
+        return df
+
     # Filtrer la colonne 'CUMUL' pour ne pas prendre les lignes où CUMUL == '0'
     if 'CUMUL' in df.columns:
         df_filtered = df_filtered[~df_filtered['CUMUL'].isin([0, '0'])]
@@ -58,22 +62,26 @@ def filter_data(df):
 
     return df_filtered
 
-# Étape 3 : Détection des doublons de matricules pour une même date
+# Étape 3 : Détection automatique des doublons de matricules pour une même date
 def detect_duplicates(df):
-    col_matricule = st.selectbox("Sélectionnez la colonne des matricules", df.columns)
-    col_date = st.selectbox("Sélectionnez la colonne des dates", df.columns)
-    col_nom = st.selectbox("Sélectionnez la colonne du nom", df.columns)
-    col_prenom = st.selectbox("Sélectionnez la colonne du prénom", df.columns)
-    
-    df[col_date] = pd.to_datetime(df[col_date], errors='coerce')
-    df[col_date] = df[col_date].dt.strftime('%d/%m/%Y')  # Format : 'DD/MM/YYYY'
-    
-    duplicate_df = df[df.duplicated(subset=[col_matricule, col_date], keep=False)]
-    
+    # Vérifier si les colonnes existent avant de continuer
+    required_columns = ['MATRICULE', 'NOM', 'PRENOM', 'DATE DEBUT']
+    missing_columns = [col for col in required_columns if col not in df.columns]
+
+    if missing_columns:
+        st.error(f"⚠️ Colonnes manquantes : {', '.join(missing_columns)}. Vérifiez votre fichier Excel.")
+        return
+
+    df['DATE DEBUT'] = pd.to_datetime(df['DATE DEBUT'], errors='coerce')
+    df['DATE DEBUT'] = df['DATE DEBUT'].dt.strftime('%d/%m/%Y')  # Format : 'DD/MM/YYYY'
+
+    # Détection des doublons
+    duplicate_df = df[df.duplicated(subset=['MATRICULE', 'DATE DEBUT'], keep=False)]
+
     if not duplicate_df.empty:
         st.write("### Matricules en double pour la même date", unsafe_allow_html=True)
-        st.dataframe(duplicate_df[[col_date, col_matricule, col_nom, col_prenom, 'ACTIVITE']])
-        
+        st.dataframe(duplicate_df[['DATE DEBUT', 'MATRICULE', 'NOM', 'PRENOM', 'ACTIVITE']])
+
         output = io.BytesIO()
         duplicate_df.to_excel(output, index=False, engine='openpyxl')
         output.seek(0)
@@ -98,17 +106,14 @@ def main():
         # Filtrer les données selon les critères donnés
         df_filtered = filter_data(df)
 
-        # Vérifier si la colonne 'ACTIVITE' existe
-        if 'ACTIVITE' in df.columns:
-            df_filtered['ACTIVITE'] = df['ACTIVITE']
-        
-        # Affichage du DataFrame filtré avec la colonne 'ACTIVITE'
-        st.write("### Résultats filtrés", unsafe_allow_html=True)
-        st.dataframe(df_filtered)
-        
-        # Détecter les doublons dans le DataFrame filtré
-        st.write("### Détection des doublons", unsafe_allow_html=True)
-        detect_duplicates(df_filtered)
+        if df_filtered is not None and not df_filtered.empty:
+            # Affichage du DataFrame filtré
+            st.write("### Résultats filtrés", unsafe_allow_html=True)
+            st.dataframe(df_filtered)
+            
+            # Détecter les doublons dans le DataFrame filtré
+            st.write("### Détection des doublons", unsafe_allow_html=True)
+            detect_duplicates(df_filtered)
 
 if __name__ == "__main__":
     main()
