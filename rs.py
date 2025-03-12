@@ -97,7 +97,7 @@ def detect_duplicates(df):
 
 # Interface principale de l'application
 def main():
-    st.markdown("<h1 style='text-align: center; color: #0066cc;'>Détection des doublons de matricules</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: #0066cc;'>Détection des doublons</h1>", unsafe_allow_html=True)
     
     df = load_excel()
     if df is not None:
